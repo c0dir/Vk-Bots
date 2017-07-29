@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import *
 
 class CaptchaDialog(QDialog):
 
-  def __init__(self, imageData):
+  def __init__(self, imageData: bytes):
     super().__init__(None)
     self.imageData = imageData
     self.result = None
@@ -36,15 +36,6 @@ class CaptchaDialog(QDialog):
     self.submit.clicked.connect(self.accept)
     self.finished.connect(self.onfinished)
 
-  def onfinished(self, r):
-    if r == QDialog.Accepted:
+  def onfinished(self, result: int):
+    if result == QDialog.Accepted:
       self.result = self.input.text().strip()
-
-
-if __name__ == '__main__':
-  import requests
-  a = QApplication([])
-  r = requests.get('https://api.vk.com/captcha.php?sid=656102463982&s=1')
-  w = CaptchaDialog(r.content)
-  if w.exec_():
-    print('Input:', w.result)

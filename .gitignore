@@ -1,2 +1,3 @@
 *.pyc
-test_api.py
+access_token.txt
+test_auth1.py

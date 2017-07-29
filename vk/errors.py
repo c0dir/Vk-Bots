@@ -1,5 +1,7 @@
+from .datatypes import AttrDict
+
 """
-https://raw.githubusercontent.com/VKCOM/vk-api-schema/master/methods.json
+https://raw.githubusercontent.com/VKCOM/vk-api-schema/master/methods.data
 
 const data = JSON.parse(document.body.innerText)
 let s = ''
@@ -42,7 +44,7 @@ API_ERROR_USER_DELETED = 18
 
 class ApiError(Exception):
 
-  def __init__(self, error):
+  def __init__(self, error: AttrDict):
     self.code = error.error_code
     self.message = error.error_msg
     self.raw = error
@@ -51,10 +53,10 @@ class ApiError(Exception):
 
 class AuthError(Exception):
 
-  def __init__(self, json):
-    self.name = json.error
-    self.description = json.get('error_description')
-    self.raw = json
+  def __init__(self, data: AttrDict):
+    self.name = data.error
+    self.description = data.get('error_description')
+    self.raw = data
     super().__init__(
       '{0}: {1}'.format(self.name, self.description) if self.description
       else self.name
