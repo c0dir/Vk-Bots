@@ -43,7 +43,12 @@ class Api:
       if data.error == 'need_captcha':
         captcha_key = self.handle_captcha(data.captcha_img)
         if captcha_key is not None:
-          return self.authenticate(username, password, captcha_key, data.captcha_sid)
+          return self.authenticate(
+            username,
+            password,
+            captcha_key,
+            data.captcha_sid
+          )
       raise errors.AuthError(data)
     self.access_token = data.access_token
 
@@ -104,10 +109,10 @@ class ApiMethod:
     self.__api = api
     self.__name = name
 
-  def __getattr__(self, name: str):
+  def __getattr__(self, name: str) -> 'ApiMethod':
     return ApiMethod(self.__api, '{}.{}'.format(self.__name, name))
 
-  def __call__(self, *args, **kw):
+  def __call__(self, *args, **kw) -> datatypes.AttrDict:
     if kw:
       # from_ -> from
       kw = {
