@@ -1,7 +1,10 @@
 import requests
 import time
 
-from . import captcha, datatypes, errors
+from . import error_codes
+from .captcha import CaptchaDialog
+from .datatypes import AttrDict
+from .errors import ApiError, AuthError, UploadError
 from PyQt5.QtWidgets import QApplication
 from typing import Union
 
@@ -38,21 +41,16 @@ class Api:
     if captcha_key is not None:
       params['captcha_key'] = captcha_key
       params['captcha_sid'] = captcha_sid
-    data = self.request('GET', 'https://oauth.vk.com/token', params)
-    if 'error' in data:
-      if data.error == 'need_captcha':
-        captcha_key = self.handle_captcha(data.captcha_img)
+    r = self.request('GET', 'https://oauth.vk.com/token', params)
+    if 'error' in r:
+      if r.error == 'need_captcha':
+        captcha_key = self.handle_captcha(r.captcha_img)
         if captcha_key is not None:
-          return self.authenticate(
-            username,
-            password,
-            captcha_key,
-            data.captcha_sid
-          )
-      raise errors.AuthError(data)
-    self.access_token = data.access_token
+          return self.authenticate(username, password, captcha_key, r.captcha_sid)
+      raise AuthError(r)
+    self.access_token = r.access_token
 
-  def method(self, name: str, params: dict={}) -> datatypes.AttrDict:
+  def method(self, name: str, params: dict={}) -> AttrDict:
     params = dict(params)
     # Реальный путь до скрипта-обработчика
     # https://api.vk.com/api.php?oauth=1&method=users.get&user_id=1
@@ -61,29 +59,29 @@ class Api:
       params['v'] = self.version
     if 'access_token' in params:
       pass
-    elif self.access_token is not None:
+    elif self.access_token:
       params['access_token'] = self.access_token
     delay = self.delay + self.request_time - time.time()
     if delay > 0:
       time.sleep(delay)
-    data = self.request('POST', url, data=params)
+    r = self.request('POST', url, data=params)
     self.request_time = time.time()
-    if 'error' in data:
-      error = data.error
-      if error.error_code == errors.API_ERROR_CAPTCHA:
-        captcha_key = self.handle_captcha(error.captcha_img)
+    if 'error' in r:
+      err = r.error
+      if err.error_code == error_codes.API_ERROR_CAPTCHA:
+        captcha_key = self.handle_captcha(err.captcha_img)
         if captcha_key is not None:
           params['captcha_key'] = captcha_key
-          params['captcha_sid'] = error.captcha_sid
+          params['captcha_sid'] = err.captcha_sid
           return self.method(name, params)
-      raise errors.ApiError(error)
-    return data.response
+      raise ApiError(err)
+    return r.response
 
-  def upload(self, server_url: str, files: dict) -> datatypes.AttrDict:
-    data = self.request('POST', server_url, files=files)
-    if 'error' in data:
-      raise errors.UploadError(data.error)
-    return data
+  def upload(self, server_url: str, files: dict) -> AttrDict:
+    r = self.request('POST', server_url, files=files)
+    if 'error' in r:
+      raise UploadError(r.error)
+    return r
 
   def __getattr__(self, name: str):
     return ApiMethod(self, name)
@@ -93,14 +91,14 @@ class Api:
     # https://github.com/gotlium/antigate
     a = QApplication([])
     r = self.session.get(url)
-    w = captcha.CaptchaDialog(r.content)
+    w = CaptchaDialog(r.content)
     if w.exec_():
       return w.result
     return None
 
-  def request(self, method: str, url: str, *args, **kw) -> datatypes.AttrDict:
+  def request(self, method: str, url: str, *args, **kw) -> AttrDict:
     r = self.session.request(method, url, *args, **kw)
-    return r.json(object_hook=datatypes.AttrDict)
+    return r.json(object_hook=AttrDict)
 
 
 class ApiMethod:
@@ -109,10 +107,10 @@ class ApiMethod:
     self.__api = api
     self.__name = name
 
-  def __getattr__(self, name: str) -> 'ApiMethod':
+  def __getattr__(self, name: str):
     return ApiMethod(self.__api, '{}.{}'.format(self.__name, name))
 
-  def __call__(self, *args, **kw) -> datatypes.AttrDict:
+  def __call__(self, *args, **kw) -> AttrDict:
     if kw:
       # from_ -> from
       kw = {
