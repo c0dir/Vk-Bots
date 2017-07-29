@@ -54,7 +54,7 @@ class Api:
     params = dict(params)
     # Реальный путь до скрипта-обработчика
     # https://api.vk.com/api.php?oauth=1&method=users.get&user_id=1
-    url = 'https://api.vk.com/method/{0}'.format(name)
+    endpoint = 'https://api.vk.com/method/{0}'.format(name)
     if 'v' not in params:
       params['v'] = self.version
     if 'access_token' in params:
@@ -64,7 +64,7 @@ class Api:
     delay = self.delay + self.request_time - time.time()
     if delay > 0:
       time.sleep(delay)
-    r = self.request('POST', url, data=params)
+    r = self.request('POST', endpoint, data=params)
     self.request_time = time.time()
     if 'error' in r:
       err = r.error
