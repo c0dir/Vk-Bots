@@ -98,7 +98,7 @@ class Api:
       return w.result
     return None
 
-  def request(self, method: str, url: str, *args, **kw):
+  def request(self, method: str, url: str, *args, **kw) -> datatypes.AttrDict:
     r = self.session.request(method, url, *args, **kw)
     return r.json(object_hook=datatypes.AttrDict)
 
