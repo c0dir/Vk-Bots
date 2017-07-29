@@ -58,9 +58,8 @@ class AuthError(Exception):
     self.description = data.get('error_description')
     self.raw = data
     super().__init__(
-      '{0}: {1}'.format(self.name, self.description)
-        if self.description
-        else self.name
+      '{0}: {1}'.format(self.name, self.description) if self.description
+      else self.name
     )
 
 
