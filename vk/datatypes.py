@@ -1,5 +1,5 @@
 class AttrDict(dict):
 
-  def __init__(self, *args, **kw):
-    super().__init__(*args, **kw)
-    self.__dict__ = self
+  __getattr__ = dict.get
+  __setattr__ = dict.__setitem__
+  __delattr__ = dict.__delitem__
